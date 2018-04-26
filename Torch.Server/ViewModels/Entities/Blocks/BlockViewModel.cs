@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using NLog;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
@@ -15,6 +16,8 @@ namespace Torch.Server.ViewModels.Blocks
 {
     public class BlockViewModel : EntityViewModel
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        
         public IMyTerminalBlock Block => (IMyTerminalBlock) Entity;
         public MtObservableList<PropertyViewModel> Properties { get; } = new MtObservableList<PropertyViewModel>();
 
@@ -59,12 +62,12 @@ namespace Torch.Server.ViewModels.Blocks
 
         public BlockViewModel(IMyTerminalBlock block, EntityTreeViewModel tree) : base(block, tree)
         {
-            if (Block == null)
-                return;
+            Block?.GetProperties(null, WrapProperty);
+        }
 
-            var propList = new List<ITerminalProperty>();
-            block.GetProperties(propList);
-            foreach (var prop in propList)
+        private bool WrapProperty(ITerminalProperty prop)
+        {
+            try
             {
                 Type propType = null;
                 foreach (var iface in prop.GetType().GetInterfaces())
@@ -73,9 +76,22 @@ namespace Torch.Server.ViewModels.Blocks
                         propType = iface.GenericTypeArguments[0];
                 }
 
+                if (propType == null)
+                {
+                    Log.Error($"Unable to determine value type for terminal property {prop.Id} ({prop.TypeName})");
+                    return false;
+                }
+
                 var modelType = typeof(PropertyViewModel<>).MakeGenericType(propType);
                 Properties.Add((PropertyViewModel)Activator.CreateInstance(modelType, prop, this));
             }
+            catch (Exception e)
+            {
+                Log.Error($"Exception when wrapping terminal property {prop.Id} ({prop.TypeName})");
+                Log.Error(e);
+            }
+
+            return false;
         }
 
         public BlockViewModel()
