@@ -67,6 +67,9 @@ namespace Torch.Server.ViewModels.Blocks
 
         private bool WrapProperty(ITerminalProperty prop)
         {
+            if (prop == null)
+                return false;
+            
             try
             {
                 Type propType = null;
