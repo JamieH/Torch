@@ -2,9 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
+using NLog;
+using NLog.Fluent;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.Multiplayer;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using Torch.API.Managers;
 using Torch.Collections;
@@ -51,6 +56,9 @@ namespace Torch.Server.ViewModels.Entities
             new MtObservableSortedDictionary<MyCubeBlockDefinition, MtObservableSortedDictionary<long, BlockViewModel>>(
                 CubeBlockDefinitionComparer.Default);
 
+        private string _owners;
+        public string Owners { get => _owners; private set => SetValue(ref _owners, value); }
+        
         /// <inheritdoc />
         public string DescriptiveName { get; }
 
@@ -62,6 +70,12 @@ namespace Torch.Server.ViewModels.Entities
         {
             DescriptiveName = $"{grid.DisplayName} ({grid.BlocksCount} blocks)";
             Blocks.Add(_fillerDefinition, new MtObservableSortedDictionary<long, BlockViewModel>());
+            
+            TorchBase.Instance.Invoke(() =>
+            {
+                var owners = Grid.BigOwners.Select(x => MySession.Static.Players.TryGetIdentity(x)?.DisplayName ?? x.ToString());
+                Owners = string.Join(", ", owners);
+            });
         }
 
         private void Grid_OnBlockRemoved(Sandbox.Game.Entities.Cube.MySlimBlock obj)
@@ -87,10 +101,9 @@ namespace Torch.Server.ViewModels.Entities
             group.Add(block.EntityId, new BlockViewModel(block, Tree));
         }
 
-        private void Grid_OnBlockAdded(Sandbox.Game.Entities.Cube.MySlimBlock obj)
+        private void Grid_OnBlockAdded(MySlimBlock obj)
         {
-            var block = obj.FatBlock as MyTerminalBlock;
-            if (block != null)
+            if (obj.FatBlock is MyTerminalBlock block)
                 AddBlock(block);
 
             OnPropertyChanged(nameof(Name));

@@ -15,6 +15,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Orientation="Horizontal">
@@ -29,7 +30,11 @@
             <Label Content="EntityID" Width="100"/>
             <TextBox Text="{Binding Id, Mode=OneWay}" Margin="3" />
         </StackPanel>
-        <ScrollViewer Grid.Row="3" Margin="3" VerticalScrollBarVisibility="Auto">
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <Label Content="Owners: " Width="100"/>
+            <Label Content="{Binding Owners, Mode=OneWay}"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="4" Margin="3" VerticalScrollBarVisibility="Auto">
             <local:EntityControlsView DataContext="{Binding}"/>
         </ScrollViewer>
     </Grid>
